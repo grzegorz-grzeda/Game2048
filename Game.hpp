@@ -12,19 +12,22 @@
 /*================================================================================================*/
 #include "Screen.hpp"
 #include "DefaultGameField.hpp"
+#include "KeyboardInput.hpp"
 #include <cstdlib>
 #include <cstdio>
-#include <termios.h>
 /*================================================================================================*/
 class Game {
 public:
 	Game(int size = 4) :
-			isOver(false), score(0), size(size) {
+			isOver(false), score(0), historyScore(0), size(size) {
 		values = new DefaultGameField(size);
+		history = new DefaultGameField(size);
+		input = new KeyboardInput();
 		sc = new Screen();
 		srand(time(NULL));
 		putNewNumber();
 		putNewNumber();
+		history->update(values);
 		updateScreen();
 	}
 	bool isGameNotOver() {
@@ -32,7 +35,11 @@ public:
 	}
 	void update() {
 		if (move()) {
+			if (history->isDifferentThan(values)) {
 				putNewNumber();
+				history->update(values);
+				historyScore = score;
+			}
 			if (!areAnyMovesLeft())
 				isOver = true;
 			updateScreen();
@@ -40,9 +47,10 @@ public:
 	}
 private:
 	AbstractScreen *sc;
-	AbstractGameField *values;
+	AbstractGameField *values, *history;
+	AbstractPlayer *input;
 	bool isOver;
-	int score;
+	int score, historyScore;
 	int size;
 
 	void putNewNumber() {
@@ -60,41 +68,32 @@ private:
 		sc->draw(values, score, isOver);
 	}
 	bool move() {
-		char c = getKey();
-		switch (c) {
-			case 'w':
+		bool result = true;
+		switch (input->getInput()) {
+			case UP:
 				moveUp();
 				break;
-			case 'a':
+			case LEFT:
 				moveLeft();
 				break;
-			case 's':
+			case DOWN:
 				moveDown();
 				break;
-			case 'd':
+			case RIGHT:
 				moveRight();
 				break;
-			case 'q':
+			case UNDO:
+				revert();
+				break;
+			case EXIT:
 				exit(0);
 				break;
 			default:
-				return false;
+				result = false;
 		}
-		return true;
-	}
-	char getKey() {
-		termios Old, New;
-		tcgetattr(0, &Old);
-		New = Old;
-		New.c_lflag &= ~ICANON;
-		New.c_lflag &= ~ECHO;
-		tcsetattr(0, TCSANOW, &New);
 
-		char c = getchar();
-
-		tcsetattr(0, TCSANOW, &Old);
-
-		return c;
+		values->trim();
+		return result;
 	}
 	void moveUp() {
 		slide(0, size, 1, 0, size - 1, 1, false);
@@ -194,6 +193,10 @@ private:
 			}
 		}
 		return false;
+	}
+	void revert() {
+		score = historyScore;
+		values->update(history);
 	}
 
 	int generateNewNumber() {

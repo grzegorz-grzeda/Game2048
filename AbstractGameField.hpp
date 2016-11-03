@@ -65,6 +65,27 @@ public:
 			row.putNext(get(x, i));
 		return row;
 	}
+	void update(AbstractGameField*src) {
+		for (int i = 0; i < size; i++)
+			for (int j = 0; j < size; j++)
+				set(i, j, src->get(i, j));
+	}
+	bool isDifferentThan(AbstractGameField*src) {
+		return !isTheSameThan(src);
+	}
+	bool isTheSameThan(AbstractGameField*src) {
+		for (int i = 0; i < size; i++)
+			for (int j = 0; j < size; j++)
+				if (get(i, j) != src->get(i, j))
+					return false;
+		return true;
+	}
+	void trim() {
+		for (int i = 0; i < size; i++)
+			for (int j = 0; j < size; j++)
+				if (get(i, j) < 0)
+					set(i, j, 0);
+	}
 protected:
 	int size;
 };
