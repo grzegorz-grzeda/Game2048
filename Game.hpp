@@ -11,6 +11,7 @@
 #define GAME_HPP_
 /*================================================================================================*/
 #include "Screen.hpp"
+#include "DefaultGameField.hpp"
 #include <cstdlib>
 #include <cstdio>
 #include <termios.h>
@@ -18,7 +19,8 @@
 class Game {
 public:
 	Game(int size = 4) :
-			values(size, std::vector<int>(size, 0)), isOver(false), score(0), size(size) {
+			isOver(false), score(0), size(size) {
+		values = new DefaultGameField(size);
 		sc = new Screen();
 		srand(time(NULL));
 		putNewNumber();
@@ -30,20 +32,33 @@ public:
 	}
 	void update() {
 		if (move()) {
+				putNewNumber();
 			if (!areAnyMovesLeft())
 				isOver = true;
-			else
-				putNewNumber();
 			updateScreen();
 		}
 	}
 private:
 	AbstractScreen *sc;
-	std::vector<std::vector<int> > values;
+	AbstractGameField *values;
 	bool isOver;
 	int score;
 	int size;
 
+	void putNewNumber() {
+		if (!isGameAreaFull())
+			while (1) {
+				int x = generateNewPosition();
+				int y = generateNewPosition();
+				if (values->isEmpty(x, y)) {
+					values->set(x, y, generateNewNumber());
+					break;
+				}
+			}
+	}
+	void updateScreen() {
+		sc->draw(values, score, isOver);
+	}
 	bool move() {
 		char c = getKey();
 		switch (c) {
@@ -67,84 +82,6 @@ private:
 		}
 		return true;
 	}
-	void moveUp() {
-		slideToUp();
-		coalesceToUp();
-		slideToUp();
-	}
-	void moveDown() {
-		slideToDown();
-		coalesceToDown();
-		slideToDown();
-	}
-	void moveRight() {
-		slideToRight();
-		coalesceToRight();
-		slideToRight();
-	}
-	void moveLeft() {
-		slideToLeft();
-		coalesceToLeft();
-		slideToLeft();
-	}
-	void updateScreen() {
-		sc->draw(values, score, isOver);
-	}
-	void putNewNumber() {
-		if (!isGameAreaFull())
-			while (1) {
-				int x = rand() % size;
-				int y = rand() % size;
-				if (isFieldEmpty(x, y)) {
-					values.at(y).at(x) = generateNewNumber();
-					break;
-				}
-		}
-	}
-	int generateNewNumber() {
-		int number = rand() % 100;
-
-		if (number > 95)
-			return 4;
-
-		return 2;
-	}
-	bool areAnyMovesLeft() {
-		if (isGameAreaFull()) {
-			return areAnyPairs();
-		} else
-			return true;
-	}
-	bool isGameAreaFull() {
-		for (int i = 0; i < size; i++)
-			for (int j = 0; j < size; j++)
-				if (isFieldEmpty(i, j))
-					return false;
-		return true;
-	}
-	bool areAnyPairs() {
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				int current = values.at(y).at(x);
-				if (x > 0)
-					if (current == values.at(y).at(x - 1))
-						return true;
-				if (x < size - 1)
-					if (current == values.at(y).at(x + 1))
-						return true;
-				if (y > 0)
-					if (current == values.at(y - 1).at(x))
-						return true;
-				if (y < size - 1)
-					if (current == values.at(y + 1).at(x))
-						return true;
-			}
-		}
-		return false;
-	}
-	bool isFieldEmpty(int x, int y) {
-		return values.at(y).at(x) == 0;
-	}
 	char getKey() {
 		termios Old, New;
 		tcgetattr(0, &Old);
@@ -159,19 +96,46 @@ private:
 
 		return c;
 	}
-
-	void slideToUp() {
-		for (int x = 0; x < size; x++) {
-			for (int y = 0; y < size - 1; y++) {
-				if (isFieldEmpty(x, y)) {
+	void moveUp() {
+		slide(0, size, 1, 0, size - 1, 1, false);
+		coalesce(0, size, 1, 0, size - 1, 1, false);
+		slide(0, size, 1, 0, size - 1, 1, false);
+	}
+	void moveDown() {
+		slide(0, size, 1, size - 1, 0, -1, false);
+		coalesce(0, size, 1, size - 1, 0, -1, false);
+		slide(0, size, 1, size - 1, 0, -1, false);
+	}
+	void moveRight() {
+		slide(size - 1, 0, -1, 0, size, 1, true);
+		coalesce(size - 1, 0, -1, 0, size, 1, true);
+		slide(size - 1, 0, -1, 0, size, 1, true);
+	}
+	void moveLeft() {
+		slide(0, size - 1, 1, 0, size, 1, true);
+		coalesce(0, size - 1, 1, 0, size, 1, true);
+		slide(0, size - 1, 1, 0, size, 1, true);
+	}
+	void slide(int xST, int xSP, int xSTEP, int yST, int ySP, int ySTEP, bool isX) {
+		for (int x = xST; x != xSP; x += xSTEP) {
+			for (int y = yST; y != ySP; y += ySTEP) {
+				if (values->isEmpty(x, y)) {
 					int cnt = 0;
 					while (1) {
-						for (int i = y; i < size - 1; i++) {
-							values.at(i).at(x) = values.at(i + 1).at(x);
-							values.at(i + 1).at(x) = 0;
+						if (isX) {
+							for (int i = x; i != xSP; i += xSTEP) {
+								values->set(i, y, values->get(i + xSTEP, y));
+								values->set(i + xSTEP, y, 0);
+							}
+							values->set(xSP, y, 0);
+						} else {
+							for (int i = y; i != ySP; i += ySTEP) {
+								values->set(x, i, values->get(x, i + ySTEP));
+								values->set(x, i + ySTEP, 0);
+							}
+							values->set(x, ySP, 0);
 						}
-						values.at(size - 1).at(x) = 0;
-						if (!isFieldEmpty(x, y))
+						if (!(values->isEmpty(x, y)))
 							break;
 
 						cnt++;
@@ -183,133 +147,66 @@ private:
 		}
 	}
 
-	void coalesceToUp() {
-		for (int x = 0; x < size; x++) {
-			for (int y = 0; y < size - 1; y++) {
-				if (isFieldEmpty(x, y))
+
+	void coalesce(int xST, int xSP, int xD, int yST, int ySP, int yD, bool isX) {
+		int xd = isX ? xD : 0;
+		int yd = isX ? 0 : yD;
+
+		for (int x = xST; x != xSP; x += xD) {
+			for (int y = yST; y != ySP; y += yD) {
+				if (values->isEmpty(x, y))
 					continue;
 
-				if (values.at(y).at(x) == values.at(y + 1).at(x)) {
-					values.at(y).at(x) *= 2;
-					values.at(y + 1).at(x) = 0;
-					score += values.at(y).at(x);
+				int c = values->get(x, y);
+				int n = values->get(x + xd, y + yd);
+				if (c == n) {
+					values->set(x, y, c * 2);
+					values->set(x + xd, y + yd, 0);
+					score += c;
 				}
 			}
 		}
 	}
+	bool areAnyMovesLeft() {
+		if (isGameAreaFull()) {
+			return areAnyPairs();
+		} else
+			return true;
+	}
+	bool isGameAreaFull() {
+		for (int i = 0; i < size; i++)
+			for (int j = 0; j < size; j++)
+				if (values->isEmpty(i, j))
+					return false;
+		return true;
+	}
+	bool areAnyPairs() {
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				int c = values->get(x, y);
+				int u = values->get(x, y + 1);
+				int d = values->get(x, y - 1);
+				int r = values->get(x + 1, y);
+				int l = values->get(x - 1, y);
 
-	void slideToDown() {
-		for (int x = 0; x < size; x++) {
-			for (int y = size - 1; y > 0; y--) {
-				if (isFieldEmpty(x, y)) {
-					int cnt = 0;
-					while (1) {
-						for (int i = y; i > 0; i--) {
-							values.at(i).at(x) = values.at(i - 1).at(x);
-							values.at(i - 1).at(x) = 0;
-						}
-						values.at(0).at(x) = 0;
-						if (!isFieldEmpty(x, y))
-							break;
-
-						cnt++;
-						if (cnt > size * size)
-							break;
-					}
-				}
+				if ((c == u) || (c == d) || (c == l) || (c == r))
+					return true;
 			}
 		}
+		return false;
 	}
 
-	void coalesceToDown() {
-		for (int x = 0; x < size; x++) {
-			for (int y = size - 1; y > 0; y--) {
-				if (isFieldEmpty(x, y))
-					continue;
+	int generateNewNumber() {
+		int number = rand() % 100;
 
-				if (values.at(y).at(x) == values.at(y - 1).at(x)) {
-					values.at(y).at(x) *= 2;
-					values.at(y - 1).at(x) = 0;
-					score += values.at(y).at(x);
-				}
-			}
-		}
+		if (number > 95)
+			return 4;
+
+		return 2;
 	}
 
-	void slideToRight() {
-		for (int x = size - 1; x > 0; x--) {
-			for (int y = 0; y < size; y++) {
-				if (isFieldEmpty(x, y)) {
-					int cnt = 0;
-					while (1) {
-						for (int i = x; i > 0; i--) {
-							values.at(y).at(i) = values.at(y).at(i - 1);
-							values.at(y).at(i - 1) = 0;
-						}
-						values.at(y).at(0) = 0;
-						if (!isFieldEmpty(x, y))
-							break;
-
-						cnt++;
-						if (cnt > size * size)
-							break;
-					}
-				}
-			}
-		}
-	}
-
-	void coalesceToRight() {
-		for (int x = size - 1; x > 0; x--) {
-			for (int y = 0; y < size; y++) {
-				if (isFieldEmpty(x, y))
-					continue;
-
-				if (values.at(y).at(x) == values.at(y).at(x - 1)) {
-					values.at(y).at(x) *= 2;
-					values.at(y).at(x - 1) = 0;
-					score += values.at(y).at(x);
-				}
-			}
-		}
-	}
-
-	void slideToLeft() {
-		for (int x = 0; x < size - 1; x++) {
-			for (int y = 0; y < size; y++) {
-				if (isFieldEmpty(x, y)) {
-					int cnt = 0;
-					while (1) {
-						for (int i = x; i < size - 1; i++) {
-							values.at(y).at(i) = values.at(y).at(i + 1);
-							values.at(y).at(i + 1) = 0;
-						}
-						values.at(y).at(size - 1) = 0;
-						if (!isFieldEmpty(x, y))
-							break;
-
-						cnt++;
-						if (cnt > size * size)
-							break;
-					}
-				}
-			}
-		}
-	}
-
-	void coalesceToLeft() {
-		for (int x = 0; x < size - 1; x++) {
-			for (int y = 0; y < size; y++) {
-				if (isFieldEmpty(x, y))
-					continue;
-
-				if (values.at(y).at(x) == values.at(y).at(x + 1)) {
-					values.at(y).at(x) *= 2;
-					values.at(y).at(x + 1) = 0;
-					score += values.at(y).at(x);
-				}
-			}
-		}
+	int generateNewPosition() {
+		return rand() % size;
 	}
 };
 /*================================================================================================*/

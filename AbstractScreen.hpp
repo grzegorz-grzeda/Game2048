@@ -17,22 +17,23 @@
 #include <vector>
 #include <iomanip>
 #include <fstream>
+#include "AbstractGameField.hpp"
 /*================================================================================================*/
 class AbstractScreen {
 public:
 	AbstractScreen(int fieldWidth) :
 			fieldWidth(fieldWidth) {
 	}
-	void draw(std::vector<std::vector<int> > values, int gameScore, bool isGameOver) {
+	void draw(AbstractGameField *field, int gameScore, bool isGameOver) {
 		prepareWindowContext();
 		getWindowContext() << makeStatusLine(gameScore, isGameOver) << std::endl << std::endl;
 
-		for (std::vector<std::vector<int> >::iterator row = values.begin(); row < values.end();
-		      ++row) {
-			getWindowContext() << makeDivisionLine(row->size()) << std::endl;
-			getWindowContext() << makeOneLine(*row) << std::endl;
+		int size = field->getSize();
+		for (int i = 0; i < size; i++) {
+			getWindowContext() << makeDivisionLine(size) << std::endl;
+			getWindowContext() << makeOneLine(field->getRow(i)) << std::endl;
 		}
-		getWindowContext() << makeDivisionLine(values.at(0).size()) << std::endl;
+		getWindowContext() << makeDivisionLine(size) << std::endl;
 		releaseWindowContext();
 	}
 	virtual ~AbstractScreen() {
@@ -64,14 +65,15 @@ private:
 		ss << number << postfix;
 		return ss.str();
 	}
-	std::string makeOneLine(std::vector<int> numbers) {
+	std::string makeOneLine(GameFieldVector row) {
 		std::stringstream ss;
 		ss << "|";
-		for (std::vector<int>::iterator it = numbers.begin(); it < numbers.end(); ++it) {
-			if (*it == 0) {
+		for (int i = 0; i < row.getSize(); i++) {
+			int n = row.getNext();
+			if (n == 0) {
 				ss << std::setw(fieldWidth) << " ";
 			} else {
-				ss << std::setw(fieldWidth) << getNumberString(*it);
+				ss << std::setw(fieldWidth) << getNumberString(n);
 			}
 			ss << "|";
 		}
