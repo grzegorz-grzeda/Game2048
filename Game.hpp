@@ -91,15 +91,14 @@ private:
 		sc->draw(values, score, isOver);
 	}
 	void putNewNumber() {
-		int cnt = 0;
-		while (cnt < size * size) {
-			int x = rand() % size;
-			int y = rand() % size;
-			if (isFieldEmpty(x, y)) {
-				values[y][x] = generateNewNumber();
-				break;
-			}
-			cnt++;
+		if (!isGameAreaFull())
+			while (1) {
+				int x = rand() % size;
+				int y = rand() % size;
+				if (isFieldEmpty(x, y)) {
+					values.at(y).at(x) = generateNewNumber();
+					break;
+				}
 		}
 	}
 	int generateNewNumber() {
