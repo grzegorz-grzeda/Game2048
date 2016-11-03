@@ -7,8 +7,8 @@
  */
 
 /*================================================================================================*/
-#ifndef SCREENINTERFACE_HPP_
-#define SCREENINTERFACE_HPP_
+#ifndef ABSTRACTSCREEN_HPP_
+#define ABSTRACTSCREEN_HPP_
 /*================================================================================================*/
 #include <vector>
 #include <iostream>
@@ -22,7 +22,6 @@ class AbstractScreen {
 public:
 	AbstractScreen(int fieldWidth) :
 			fieldWidth(fieldWidth) {
-
 	}
 	void draw(std::vector<std::vector<int> > values, int gameScore, bool isGameOver) {
 		prepareWindowContext();
@@ -98,7 +97,7 @@ private:
 	int fieldWidth;
 };
 /*================================================================================================*/
-#endif /* SCREENINTERFACE_HPP_ */
+#endif /* ABSTRACTSCREEN_HPP_ */
 /*================================================================================================*/
 /*                                              EOF                                               */
 /*================================================================================================*/

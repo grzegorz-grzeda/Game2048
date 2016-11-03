@@ -11,11 +11,11 @@
 #define SCREEN_HPP_
 /*================================================================================================*/
 
-#include "ScreenInterface.hpp"
+#include "AbstractScreen.hpp"
 /*================================================================================================*/
 class Screen: public AbstractScreen {
 public:
-	Screen(std::string outputDeviceName, int fieldWidth) :
+	Screen(int fieldWidth = 5, std::string outputDeviceName = "") :
 			AbstractScreen(fieldWidth), outputDeviceName(outputDeviceName) {
 	}
 	~Screen() {

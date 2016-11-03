@@ -6,27 +6,23 @@
  *      Author: grzegorz
  */
 /*================================================================================================*/
-#include "Screen.hpp"
+#include "Game.hpp"
 /*================================================================================================*/
 using namespace std;
 /*================================================================================================*/
 int main() {
-	vector<vector<int> > rows;
-	vector<int> row;
-	row.push_back(16);
-	row.push_back(32);
-	row.push_back(0);
-	row.push_back(1024);
-	row.push_back(512);
+	cout << "Set the row count (3-10): ";
+	cout.flush();
+	int count;
+	cin >> count;
 
-	rows.push_back(row);
-	rows.push_back(row);
-	rows.push_back(row);
-	rows.push_back(row);
-	rows.push_back(row);
+	count = (count < 3) ? 3 : count;
+	count = (count > 10) ? 10 : count;
 
-	Screen sc("", 5);
-	sc.draw(rows, 10, false);
+	Game game(count);
+	while (game.isGameNotOver()) {
+		game.update();
+	}
 	return 0;
 }
 /*================================================================================================*/
