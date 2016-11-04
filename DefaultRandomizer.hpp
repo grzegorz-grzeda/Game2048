@@ -1,51 +1,45 @@
 /*================================================================================================*/
 /*
- * Screen.hpp
+ * DefaultRandomizer.hpp
  *
- *  Created on: 28.10.2016
+ *  Created on: 04.11.2016
  *      Author: grzegorz
  */
 
 /*================================================================================================*/
-#ifndef SCREEN_HPP_
-#define SCREEN_HPP_
+#ifndef DEFAULTRANDOMIZER_HPP_
+#define DEFAULTRANDOMIZER_HPP_
 /*================================================================================================*/
-
-#include "AbstractScreen.hpp"
+#include "AbstractRandomizer.hpp"
+#include <cstdlib>
+#include <ctime>
 /*================================================================================================*/
-class Screen: public AbstractScreen {
+class DefaultRandomizer: public AbstractRandomizer {
 public:
-	Screen(int fieldWidth = 5, std::string outputDeviceName = "") :
-			AbstractScreen(fieldWidth), outputDeviceName(outputDeviceName) {
+	DefaultRandomizer(int rowSize) :
+			size(rowSize) {
+		srand(time(NULL));
 	}
-	~Screen() {
-	}
-private:
-	std::ostream& getWindowContext() {
-		if (outputDevice.is_open()) {
-			return outputDevice;
-		}
-		return std::cout;
+	GameCell randomizeCell() {
+		return GameCell(randomizeDirection(), randomizeDirection(), randomizeValue());
 	}
 
-	void prepareWindowContext() {
-		if (!outputDeviceName.empty()) {
-			outputDevice.open(outputDeviceName.c_str(), std::ofstream::out);
-		}
-		if (getWindowContext() == std::cout) {
-			getWindowContext() << "\x1B[2J\x1B[H";
-			getWindowContext().flush();
-		}
+private:
+	int size;
+	int randomizeDirection() {
+		return rand() % size;
 	}
-	void releaseWindowContext() {
-		if (outputDevice.is_open())
-			outputDevice.close();
+	int randomizeValue() {
+		int number = rand() % 100;
+
+		if (number > 95)
+			return 4;
+
+		return 2;
 	}
-	std::string outputDeviceName;
-	std::ofstream outputDevice;
 };
 /*================================================================================================*/
-#endif /* SCREEN_HPP_ */
+#endif /* DEFAULTRANDOMIZER_HPP_ */
 /*================================================================================================*/
 /*                                              EOF                                               */
 /*================================================================================================*/

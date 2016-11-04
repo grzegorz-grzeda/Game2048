@@ -10,21 +10,22 @@
 #ifndef GAME_HPP_
 #define GAME_HPP_
 /*================================================================================================*/
-#include "Screen.hpp"
 #include "DefaultGameField.hpp"
 #include "KeyboardInput.hpp"
+#include "DefaultRandomizer.hpp"
 #include <cstdlib>
 #include <cstdio>
+#include "TTYScreen.hpp"
 /*================================================================================================*/
 class Game {
 public:
 	Game(int size = 4) :
 			isOver(false), score(0), historyScore(0), size(size) {
+		sc = new TTYScreen();
 		values = new DefaultGameField(size);
 		history = new DefaultGameField(size);
 		input = new KeyboardInput();
-		sc = new Screen();
-		srand(time(NULL));
+		randomizer = new DefaultRandomizer(size);
 		putNewNumber();
 		putNewNumber();
 		history->update(values);
@@ -49,6 +50,7 @@ private:
 	AbstractScreen *sc;
 	AbstractGameField *values, *history;
 	AbstractPlayer *input;
+	AbstractRandomizer *randomizer;
 	bool isOver;
 	int score, historyScore;
 	int size;
@@ -56,10 +58,9 @@ private:
 	void putNewNumber() {
 		if (!isGameAreaFull())
 			while (1) {
-				int x = generateNewPosition();
-				int y = generateNewPosition();
-				if (values->isEmpty(x, y)) {
-					values->set(x, y, generateNewNumber());
+				GameCell gc = randomizer->randomizeCell();
+				if (values->isEmpty(gc.getX(), gc.getY())) {
+					values->set(gc.getX(), gc.getY(), gc.getValue());
 					break;
 				}
 			}
@@ -199,18 +200,6 @@ private:
 		values->update(history);
 	}
 
-	int generateNewNumber() {
-		int number = rand() % 100;
-
-		if (number > 95)
-			return 4;
-
-		return 2;
-	}
-
-	int generateNewPosition() {
-		return rand() % size;
-	}
 };
 /*================================================================================================*/
 #endif /* GAME_HPP_ */
