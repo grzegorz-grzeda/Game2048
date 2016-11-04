@@ -42,6 +42,9 @@ private:
 /*================================================================================================*/
 class AbstractGameField {
 public:
+	enum Direction {
+		UP, DOWN, LEFT, RIGHT
+	};
 	AbstractGameField(int size) :
 			size(size) {
 	}
